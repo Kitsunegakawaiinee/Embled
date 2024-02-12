@@ -1,0 +1,220 @@
+#define BUTTON 12
+#define BUZZER 14 
+
+double notes[] = {
+                16.35,17.32,18.35,19.45,20.60,21.83,23.12,24.50,25.96,27.50,29.14,30.87, 
+                32.70,34.65,36.71,38.89,41.20,43.65,46.25,49.00,51.91,55.00,58.27,61.74,
+                65.41,69.30,73.42,77.78,82.41,87.31,92.50,98.00,103.8,110.0,116.5,123.5,
+                130.8,138.6,146.8,155.6,164.8,174.6,185.0,196.0,207.7,220.0,233.1,246.9,
+                261.6,277.2,293.7,311.1,329.6,349.2,370.0,392.0,415.3,440.0,466.2,493.9,
+                523.3,554.4,587.3,622.3,659.3,698.5,740.0,784.0,830.6,880.0,932.3,987.8
+            };
+
+
+#define C0 0
+#define Cs0 1
+#define D0 2
+#define Eb0 3
+#define E0 4
+#define F0 5
+#define Fs0 6
+#define G0 7
+#define Gs0 8
+#define A0 9
+#define Bb0 10
+#define B0 11
+#define C1 12
+#define Cs1 13
+#define D1 14
+#define Eb1 15
+#define E1 16
+#define F1 17
+#define Fs1 18
+#define G1 19
+#define Gs1 20
+#define A1 21
+#define Bb1 22
+#define B1 23
+#define C2 24
+#define Cs2 25
+#define D2 26
+#define Eb2 27
+#define E2 28
+#define F2 29
+#define Fs2 30
+#define G2 31
+#define Gs2 32
+#define A2 33
+#define Bb2 34
+#define B2 35
+#define C3 36
+#define Cs3 37
+#define D3 38
+#define Eb3 39
+#define E3 40
+#define F3 41
+#define Fs3 42
+#define G3 43
+#define Gs3 44
+#define A3 45
+#define Bb3 46
+#define B3 47
+#define C4 48
+#define Cs4 49
+#define D4 50
+#define Eb4 51
+#define E4 52
+#define F4 53
+#define Fs4 54
+#define G4 55
+#define Gs4 56
+#define A4 57
+#define Bb4 58
+#define B4 59
+#define C5 60
+#define Cs5 61
+#define D5 62
+#define Eb5 63
+#define E5 64
+#define F5 65
+#define Fs5 66
+#define G5 67
+#define Gs5 68
+#define A5 69
+#define Bb5 70
+#define B5 71
+
+hw_timer_t *Sound = NULL;
+hw_timer_t *Stage = NULL;
+int note[] = 
+  {
+    notes[C4],notes[C3],notes[G3],notes[F4],notes[C3],notes[C4],notes[C4],notes[F4],notes[C3],notes[D3],notes[C3],notes[D3],notes[F4],
+    notes[C4],notes[C3],notes[G3],notes[F4],notes[C3],notes[C4],notes[C4],notes[F4],notes[C3],notes[D3],notes[C3],notes[D3],notes[F4],
+    notes[C5],notes[C4],notes[A4],
+    notes[G5],notes[F5],notes[E5],notes[F5],notes[G5],notes[E4],notes[D4],notes[C4],
+    notes[D5],notes[C4],notes[A4],
+    notes[G4],notes[F4],notes[G4],notes[A4],notes[E4],notes[F4],notes[G4],notes[F4],notes[E4],notes[F4],
+    notes[D5],notes[C4],notes[A4],
+    notes[G4],notes[F4],notes[G4],notes[A4],notes[E4],notes[F4],notes[G4],notes[F4],notes[E4],notes[F4]
+  };
+
+int tempo[] = 
+  {
+    548480,548480,1097280,548480,548480,1097280,548640,548640,548640,548640,548640,548640,1097280,
+    548480,548480,1097280,548480,548480,1097280,548640,548640,548640,548640,548640,548640,1097280,
+    548480,274320,274320,
+    274320,274320,274320,274320,548480,274320,137160,1097280,
+    548480,274320,274320,
+    274320,274320,274320,274320,548480,548480,274320,274320,274320,274320,
+    548480,274320,274320,
+    274320,274320,274320,274320,548480,548480,274320,274320,274320,274320
+  };
+int arrLength = sizeof(note) / sizeof(int);
+int count = 0;
+int tp_ct = 0;
+double speed[5] = {2,1.5,1,0.5,2};
+double nowSpeed = 1;
+int idx = 2;
+
+void IRAM_ATTR pulseGen(){
+  digitalWrite(BUZZER, !digitalRead(BUZZER));
+}
+
+void IRAM_ATTR IO_INT_ISR(){
+  nowSpeed = speed[idx];
+  idx = (idx + 1)%5;
+}
+
+int tp(){
+  double t = tempo[tp_ct] * nowSpeed;
+  tp_ct = (tp_ct + 1)%arrLength;
+  return (int) t;
+}
+
+int fz(){
+  int t = note[count];
+  count = (count + 1)%arrLength;
+  return t;
+}
+
+void IRAM_ATTR start(){
+  timerAlarmWrite(Sound, fz(), true);
+  timerAlarmEnable(Sound);
+  timerAlarmWrite(Stage, tp(), true);
+  timerAlarmEnable(Stage);
+}
+
+void setup() {
+  pinMode(BUZZER, OUTPUT);
+  pinMode(BUTTON, INPUT);
+  Sound = timerBegin(0, 80, true);
+  Stage = timerBegin(1, 80, true);
+  timerAttachInterrupt(Sound, &pulseGen, true);
+  timerAttachInterrupt(Stage, &start, true);
+  attachInterrupt(BUTTON, IO_INT_ISR, RISING);
+  start();
+} 
+
+void loop()
+{
+  //do nothing
+}
+
+
+//friend code
+// #define BUZZER 14
+// #define BUTTON 12
+// hw_timer_t *Sound = NULL;
+// hw_timer_t *Stage = NULL;
+// int note[] = {451,402,536,451,536,402,338,358,338,536,451,402,451,402,536,602,536,1000000,402,338,358,338,301,268,402,451,402,358,338,402,301,1000000,301,268,338,402,338,301,1000000,301,268,338,402,338,358,1000000,358,1000000,536,451,536,451,402,451,402,1000000,402,1000000,402,1000000};
+// int tempo[] = {175000,175000,175000,175000,175000,550000,175000,175000,175000,175000,175000,370000,175000,175000,175000,150000,190000,215000,500000,175000,175000,175000,175000,175000,420000,175000,175000,175000,155000,400000,300000,100000,175000,175000,400000,175000,175000,300000,100000,175000,175000,400000,175000,175000,300000,120000,300000,300000,175000,175000,175000,175000,1000000,175000,105000,85000,105000,85000,105000,110000};
+// int arrLength = sizeof(note) / sizeof(int);
+// int count = 0;
+// int tp_ct = 0;
+// double speed[5] = {1,0.75,0.5,2,1.5};
+// double nowSpeed = 1;
+// int idx = 1;
+
+// void IRAM_ATTR pulseGen(){
+//   digitalWrite(BUZZER, !digitalRead(BUZZER));
+// }
+
+// void IRAM_ATTR IO_INT_ISR(){
+//   nowSpeed = speed[idx];
+//   idx = (idx + 1)%5;
+// }
+
+// int tp(){
+//   double t = tempo[tp_ct] * nowSpeed;
+//   tp_ct = (tp_ct + 1)%arrLength;
+//   return (int) t;
+// }
+
+// int fz(){
+//   int t = note[count];
+//   count = (count + 1)%arrLength;
+//   return t;
+// }
+
+// void IRAM_ATTR start(){
+//   timerAlarmWrite(Sound, fz(), true);
+//   timerAlarmEnable(Sound);
+//   timerAlarmWrite(Stage, tp(), true);
+//   timerAlarmEnable(Stage);
+// }
+
+// void setup() {
+//   pinMode(BUZZER, OUTPUT);
+//   pinMode(BUTTON, INPUT);
+//   Sound = timerBegin(0, 80, true);
+//   Stage = timerBegin(1, 80, true);
+//   timerAttachInterrupt(Sound, &pulseGen, true);
+//   timerAttachInterrupt(Stage, &start, true);
+//   attachInterrupt(BUTTON, IO_INT_ISR, RISING);
+//   start();
+// } 
+
+// void loop()
+// {
+//   // Do nothing....
+// }
